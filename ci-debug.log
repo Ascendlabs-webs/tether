@@ -1,0 +1,80 @@
+=== date ===
+Tue Sep 29 18:44:21 UTC 2026
+=== pwd ===
+/home/runner/work/tether/tether
+=== ls root ===
+total 716
+drwxr-xr-x  10 runner runner   4096 Sep 29 18:44 .
+drwxr-xr-x   3 runner runner   4096 Sep 29 18:43 ..
+-rw-r--r--   1 runner runner    445 Sep 29 18:43 .env.example
+drwxr-xr-x   7 runner runner   4096 Sep 29 18:43 .git
+drwxr-xr-x   3 runner runner   4096 Sep 29 18:43 .github
+-rw-r--r--   1 runner runner     74 Sep 29 18:43 .gitignore
+-rw-r--r--   1 runner runner    542 Sep 29 18:43 README.md
+drwxr-xr-x   4 runner runner   4096 Sep 29 18:43 android
+-rw-r--r--   1 runner runner 193745 Sep 29 18:43 bun.lock
+-rw-r--r--   1 runner runner    186 Sep 29 18:43 capacitor.config.ts
+-rw-r--r--   1 runner runner    102 Sep 29 18:44 ci-debug.log
+drwxr-xr-x   3 runner runner   4096 Sep 29 18:44 dist
+-rw-r--r--   1 runner runner    543 Sep 29 18:43 firebase-applet-config.json
+-rw-r--r--   1 runner runner   4170 Sep 29 18:43 firebase-blueprint.json
+-rw-r--r--   1 runner runner   1895 Sep 29 18:43 firestore.rules
+-rw-r--r--   1 runner runner   1833 Sep 29 18:43 index.html
+-rw-r--r--   1 runner runner    323 Sep 29 18:43 metadata.json
+drwxr-xr-x 403 runner runner  16384 Sep 29 18:44 node_modules
+-rw-r--r--   1 runner runner 424674 Sep 29 18:43 package-lock.json
+-rw-r--r--   1 runner runner   1129 Sep 29 18:43 package.json
+drwxr-xr-x   2 runner runner   4096 Sep 29 18:43 public
+drwxr-xr-x   2 runner runner   4096 Sep 29 18:43 scripts
+drwxr-xr-x   8 runner runner   4096 Sep 29 18:43 src
+-rw-r--r--   1 runner runner    564 Sep 29 18:43 tsconfig.json
+-rw-r--r--   1 runner runner   3008 Sep 29 18:43 vite.config.ts
+=== node/npm ===
+v20.20.2
+10.8.2
+=== NODE_ENV=[] ===
+=== dist ===
+total 176
+drwxr-xr-x  3 runner runner  4096 Sep 29 18:44 .
+drwxr-xr-x 10 runner runner  4096 Sep 29 18:44 ..
+-rw-r--r--  1 runner runner 12974 Sep 29 18:44 apple-touch-icon.png
+drwxr-xr-x  2 runner runner  4096 Sep 29 18:44 assets
+-rw-r--r--  1 runner runner  1801 Sep 29 18:44 icon.svg
+-rw-r--r--  1 runner runner  2052 Sep 29 18:44 index.html
+-rw-r--r--  1 runner runner   556 Sep 29 18:44 manifest.webmanifest
+-rw-r--r--  1 runner runner 13898 Sep 29 18:44 pwa-192x192.png
+-rw-r--r--  1 runner runner 45095 Sep 29 18:44 pwa-512x512.png
+-rw-r--r--  1 runner runner 38561 Sep 29 18:44 pwa-maskable-512x512.png
+-rw-r--r--  1 runner runner   134 Sep 29 18:44 registerSW.js
+-rw-r--r--  1 runner runner  2260 Sep 29 18:44 sw.js
+-rw-r--r--  1 runner runner 21863 Sep 29 18:44 workbox-835c8c05.js
+=== index test ===
+index-exists:0
+=== cap bin ===
+lrwxrwxrwx 1 runner runner 31 Sep 29 18:44 node_modules/.bin/cap -> ../@capacitor/cli/bin/capacitor
+=== cap version ===
+[31m[fatal][39m The Capacitor CLI requires NodeJS >=22.0.0
+        Please install the latest LTS version.
+cap-version-exit:1
+=== cap doctor ===
+[31m[fatal][39m The Capacitor CLI requires NodeJS >=22.0.0
+        Please install the latest LTS version.
+doctor-exit:1
+=== npm ls cap ===
+react-example@0.0.0 /home/runner/work/tether/tether
+└── @capacitor/cli@8.5.2
+
+=== tailwind present? ===
+tailwind-exists:0
+=== java ===
+openjdk version "17.0.20" 2026-07-21 LTS
+OpenJDK Runtime Environment Zulu17.68+19-CRaC-CA (build 17.0.20+8-LTS)
+OpenJDK 64-Bit Server VM Zulu17.68+19-CRaC-CA (build 17.0.20+8-LTS, mixed mode, sharing)
+JAVA_HOME=[/opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64]
+=== android home ===
+ANDROID_HOME=[/usr/local/lib/android/sdk]
+build-tools
+cmake
+cmdline-tools
+extras
+licenses
