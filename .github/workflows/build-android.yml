@@ -25,11 +25,9 @@ jobs:
         java-version: "17"
 
     - name: Install npm dependencies
-      run: |
-        npm install --legacy-peer-deps --ignore-scripts
-        npm rebuild esbuild --ignore-scripts=false
+      run: npm install --legacy-peer-deps
       env:
-        npm_config_ignore_scripts: "false"
+        npm_config_foreground_scripts: "true"
 
     - name: Build web bundle
       run: npm run build
