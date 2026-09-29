@@ -19,25 +19,14 @@ jobs:
         node-version: "20"
         cache: "npm"
 
-    # NOTE: was "temurin" — Adoptium's API frequently rate-limits/fails on
-    # GitHub runners, which kills the run in ~20s before npm ever starts.
-    # Zulu serves the same JDK 17 from a far more reliable CDN.
+    # ubuntu-latest already ships the Android SDK (ANDROID_HOME preset),
+    # so no separate SDK setup action is used.
     - name: Setup Java 17
       uses: actions/setup-java@v4
       with:
         distribution: "zulu"
         java-version: "17"
         cache: "gradle"
-
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    # compileSdk/targetSdk 36 needs platform-36 + build-tools 36, which are
-    # not guaranteed pre-installed on ubuntu-latest. Install explicitly.
-    - name: Install Android platform and build-tools 36
-      run: |
-        yes | sdkmanager --licenses > /dev/null
-        sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
     # package-lock.json is lockfileVersion 3 and in sync — npm ci is correct,
     # faster, and reproducible. (Requires npm 10+; never use npm 12 here.)
@@ -47,9 +36,21 @@ jobs:
     - name: Build web bundle
       run: npm run build
 
+    - name: Verify web assets and Capacitor CLI
+      run: |
+        node --version
+        npm --version
+        ls -la dist | head -20
+        test -f dist/index.html && echo "dist/index.html OK"
+        ls node_modules/.bin/cap && echo "cap binary OK"
+        ./node_modules/.bin/cap --version
+        ./node_modules/.bin/cap doctor || true
+
     # android/ is committed to the repo, so `cap add` is not needed.
+    # Invokes the local CLI binary directly instead of via npx so the exact
+    # Capacitor version from package-lock.json is always used.
     - name: Capacitor Sync
-      run: npx cap sync android
+      run: ./node_modules/.bin/cap sync android
 
     - name: Grant Gradle execute permission
       run: chmod +x android/gradlew
