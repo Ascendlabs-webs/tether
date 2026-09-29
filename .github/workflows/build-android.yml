@@ -17,34 +17,46 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: "20"
+        cache: "npm"
 
+    # NOTE: was "temurin" — Adoptium's API frequently rate-limits/fails on
+    # GitHub runners, which kills the run in ~20s before npm ever starts.
+    # Zulu serves the same JDK 17 from a far more reliable CDN.
     - name: Setup Java 17
       uses: actions/setup-java@v4
       with:
-        distribution: "temurin"
+        distribution: "zulu"
         java-version: "17"
+        cache: "gradle"
 
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    # compileSdk/targetSdk 36 needs platform-36 + build-tools 36, which are
+    # not guaranteed pre-installed on ubuntu-latest. Install explicitly.
+    - name: Install Android platform and build-tools 36
+      run: |
+        yes | sdkmanager --licenses > /dev/null
+        sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+    # package-lock.json is lockfileVersion 3 and in sync — npm ci is correct,
+    # faster, and reproducible. (Requires npm 10+; never use npm 12 here.)
     - name: Install npm dependencies
-      run: npm install --legacy-peer-deps
-      env:
-        npm_config_foreground_scripts: "true"
+      run: npm ci --legacy-peer-deps --no-audit --no-fund
 
     - name: Build web bundle
       run: npm run build
 
+    # android/ is committed to the repo, so `cap add` is not needed.
     - name: Capacitor Sync
-      run: |
-        if [ ! -d "android" ]; then
-          npx cap add android
-        fi
-        npx cap sync android
+      run: npx cap sync android
 
     - name: Grant Gradle execute permission
       run: chmod +x android/gradlew
 
     - name: Build Debug APK
       working-directory: ./android
-      run: ./gradlew assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
