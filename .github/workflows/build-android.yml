@@ -3,7 +3,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch: # Allows you to manually trigger the build from GitHub UI
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,33 +16,37 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: "20"
 
     - name: Setup Java 17
       uses: actions/setup-java@v4
       with:
-        distribution: 'temurin'
-        java-version: '17'
+        distribution: "temurin"
+        java-version: "17"
 
     - name: Install npm dependencies
-      run: npm install --legacy-peer-deps
+      run: |
+        npm install --legacy-peer-deps --ignore-scripts
+        npm rebuild esbuild --ignore-scripts=false
+      env:
+        npm_config_ignore_scripts: "false"
 
     - name: Build web bundle
       run: npm run build
 
     - name: Capacitor Sync
       run: |
-        # In case the android folder isn't committed, add it:
         if [ ! -d "android" ]; then
           npx cap add android
         fi
         npx cap sync android
 
+    - name: Grant Gradle execute permission
+      run: chmod +x android/gradlew
+
     - name: Build Debug APK
       working-directory: ./android
-      run: |
-        chmod +x gradlew
-        ./gradlew assembleDebug
+      run: ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
