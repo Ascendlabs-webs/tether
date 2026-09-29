@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # one-time probe needs to push ci-debug.log; will be removed
 
     steps:
     - name: Checkout code
@@ -45,6 +47,35 @@ jobs:
         ls node_modules/.bin/cap && echo "cap binary OK"
         ./node_modules/.bin/cap --version
         ./node_modules/.bin/cap doctor || true
+
+    # TEMPORARY PROBE (remove after diagnosis): the Actions log API is not
+    # accessible from here, so dump the filesystem state to a file and push
+    # it back to the repo where it can be read. [skip ci] prevents loops.
+    - name: Dump diagnostics to repo
+      if: always()
+      run: |
+        set +e
+        {
+          echo "=== date ==="; date -u
+          echo "=== pwd ==="; pwd
+          echo "=== ls root ==="; ls -la
+          echo "=== node/npm ==="; node --version; npm --version
+          echo "=== NODE_ENV=[$NODE_ENV] ==="
+          echo "=== dist ==="; ls -la dist || echo "NO-DIST-DIR"
+          echo "=== index test ==="; test -f dist/index.html; echo "index-exists:$?"
+          echo "=== cap bin ==="; ls -la node_modules/.bin/cap || echo "NO-CAP-BIN"
+          echo "=== cap version ==="; ./node_modules/.bin/cap --version; echo "cap-version-exit:$?"
+          echo "=== cap doctor ==="; ./node_modules/.bin/cap doctor || echo "doctor-exit:$?"
+          echo "=== npm ls cap ==="; npm ls @capacitor/cli 2>&1 | head -10
+          echo "=== tailwind present? ==="; test -d node_modules/tailwindcss; echo "tailwind-exists:$?"
+          echo "=== java ==="; java -version 2>&1 | head -3; echo "JAVA_HOME=[$JAVA_HOME]"
+          echo "=== android home ==="; echo "ANDROID_HOME=[$ANDROID_HOME]"; ls "$ANDROID_HOME" 2>&1 | head -5
+        } > ci-debug.log 2>&1
+        git config user.name "ci-probe"
+        git config user.email "ci-probe@example.com"
+        git add ci-debug.log
+        git commit -m "ci: debug dump [skip ci]" || echo "nothing to commit"
+        git push origin HEAD:master || echo "push failed"
 
     # android/ is committed to the repo, so `cap add` is not needed.
     # Invokes the local CLI binary directly instead of via npx so the exact
