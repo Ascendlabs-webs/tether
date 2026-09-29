@@ -1,0 +1,9 @@
+{
+  "name": "Tether - Private Couples Connection",
+  "description": "Connection without the anxiety. Intimacy without the effort. A private, calm connection layer between two partners.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

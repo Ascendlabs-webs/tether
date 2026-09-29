@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // User profiles & emotional availability
+    match /users/{userId} {
+      allow get: if isValidId(userId);
+      allow list: if true;
+      allow create, update: if isValidId(userId);
+      allow delete: if false;
+    }
+
+    // Couples collection & shared data
+    match /couples/{coupleId} {
+      allow get: if isValidId(coupleId);
+      allow list: if true;
+      allow create, update: if isValidId(coupleId);
+      allow delete: if false;
+
+      // Ephemeral moments
+      match /moments/{momentId} {
+        allow list: if isValidId(coupleId);
+        allow get: if isValidId(coupleId) && isValidId(momentId);
+        allow create, update: if isValidId(coupleId) && isValidId(momentId);
+        allow delete: if isValidId(coupleId) && isValidId(momentId);
+      }
+
+      // Private memory vault
+      match /vault/{vaultId} {
+        allow list: if isValidId(coupleId);
+        allow get: if isValidId(coupleId) && isValidId(vaultId);
+        allow create, update: if isValidId(coupleId) && isValidId(vaultId);
+        allow delete: if isValidId(coupleId) && isValidId(vaultId);
+      }
+
+      // Shared Idea Jar
+      match /ideas/{ideaId} {
+        allow list: if isValidId(coupleId);
+        allow get: if isValidId(coupleId) && isValidId(ideaId);
+        allow create, update: if isValidId(coupleId) && isValidId(ideaId);
+        allow delete: if isValidId(coupleId) && isValidId(ideaId);
+      }
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

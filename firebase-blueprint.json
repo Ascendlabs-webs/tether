@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and partner state",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 80 },
+        "avatar": { "type": "string" },
+        "email": { "type": "string" },
+        "isPremium": { "type": "boolean" },
+        "tier": { "type": "string", "enum": ["free", "premium_monthly", "premium_yearly"] },
+        "currentVibe": { "type": "string", "enum": ["overwhelmed", "free_to_talk", "thinking_of_you"] },
+        "vibeUpdatedAt": { "type": "string" },
+        "isInFocusMode": { "type": "boolean" },
+        "focusModeReason": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "name", "email", "isPremium", "tier", "currentVibe"]
+    },
+    "Couple": {
+      "title": "Couple",
+      "description": "Pairing connection between two partners",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "partnerAId": { "type": "string" },
+        "partnerBId": { "type": "string" },
+        "pairingCode": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string" },
+        "anniversaryDate": { "type": "string" }
+      },
+      "required": ["id", "partnerAId", "partnerBId", "pairingCode", "createdAt"]
+    },
+    "Moment": {
+      "title": "Moment",
+      "description": "Ephemeral couple moment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "coupleId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string", "maxLength": 80 },
+        "senderAvatar": { "type": "string" },
+        "mediaType": { "type": "string", "enum": ["photo", "video", "audio"] },
+        "mediaUrl": { "type": "string" },
+        "caption": { "type": "string", "maxLength": 120 },
+        "durationSeconds": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "expiresAt": { "type": "string" },
+        "isSavedToVault": { "type": "boolean" },
+        "isLocked": { "type": "boolean" }
+      },
+      "required": ["id", "coupleId", "senderId", "senderName", "mediaType", "mediaUrl", "createdAt", "expiresAt"]
+    },
+    "VaultMemory": {
+      "title": "VaultMemory",
+      "description": "Permanently saved moment in private vault",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "coupleId": { "type": "string" },
+        "momentId": { "type": "string" },
+        "savedAt": { "type": "string" },
+        "savedBy": { "type": "string" },
+        "note": { "type": "string", "maxLength": 300 }
+      },
+      "required": ["id", "coupleId", "momentId", "savedAt", "savedBy"]
+    },
+    "Idea": {
+      "title": "Idea",
+      "description": "Shared couple idea or future date",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "coupleId": { "type": "string" },
+        "title": { "type": "string", "maxLength": 120 },
+        "note": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "enum": ["date", "cook", "place", "watch", "activity", "future"] },
+        "createdBy": { "type": "string" },
+        "createdByName": { "type": "string", "maxLength": 80 },
+        "createdAt": { "type": "string" },
+        "isCompleted": { "type": "boolean" }
+      },
+      "required": ["id", "coupleId", "title", "category", "createdBy", "createdByName", "createdAt", "isCompleted"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile collection"
+    },
+    "/couples/{coupleId}": {
+      "schema": "Couple",
+      "description": "Couple root pairing collection"
+    },
+    "/couples/{coupleId}/moments/{momentId}": {
+      "schema": "Moment",
+      "description": "Ephemeral moments subcollection"
+    },
+    "/couples/{coupleId}/vault/{vaultId}": {
+      "schema": "VaultMemory",
+      "description": "Private vault memories subcollection"
+    },
+    "/couples/{coupleId}/ideas/{ideaId}": {
+      "schema": "Idea",
+      "description": "Shared ideas subcollection"
+    }
+  }
+}
