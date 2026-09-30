@@ -33,10 +33,18 @@ jobs:
     # compileSdk/targetSdk is 36, which is not guaranteed pre-installed on the
     # runner image. Install it (no-op if already present) using the runner's
     # own SDK tools — no third-party setup action needed (that broke run 7).
+    # NOTE: sdkmanager is NOT on PATH, so resolve it under $ANDROID_HOME.
     - name: Ensure Android SDK platform and build-tools 36
       run: |
-        yes | sdkmanager --licenses > /dev/null
-        sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+        if [ ! -f "$SDKMGR" ]; then
+          echo "sdkmanager not at $SDKMGR, searching..."
+          SDKMGR="$(find "$ANDROID_HOME" -maxdepth 4 -name sdkmanager -type f | head -1)"
+        fi
+        echo "Using sdkmanager: $SDKMGR"
+        test -x "$SDKMGR"
+        yes | "$SDKMGR" --licenses > /dev/null
+        "$SDKMGR" "platforms;android-36" "build-tools;36.0.0"
 
     # package-lock.json is lockfileVersion 3 and in sync — npm ci is correct,
     # faster, and reproducible.
