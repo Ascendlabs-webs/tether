@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # temporary: gradle-log probe needs to push gradle-dump.log
 
     steps:
     - name: Checkout code
@@ -63,9 +65,23 @@ jobs:
     - name: Grant Gradle execute permission
       run: chmod +x android/gradlew
 
+    # TEMPORARY PROBE: capture full gradle output to a file instead of the
+    # Actions log (not accessible from here). Reverted after diagnosis.
     - name: Build Debug APK
       working-directory: ./android
-      run: ./gradlew assembleDebug --no-daemon --stacktrace
+      run: ./gradlew assembleDebug --no-daemon --stacktrace > ../gradle.log 2>&1
+
+    # TEMPORARY PROBE: push the gradle log back to the repo where it can be
+    # read. [skip ci] prevents loops. Removed after diagnosis.
+    - name: Dump Gradle log to repo
+      if: always()
+      run: |
+        { echo "===== HEAD ====="; head -n 60 gradle.log; echo; echo "===== TAIL ====="; tail -n 300 gradle.log; } > gradle-dump.log 2>&1
+        git config user.name "ci-probe"
+        git config user.email "ci-probe@example.com"
+        git add gradle-dump.log
+        git commit -m "ci: gradle log dump [skip ci]" || echo "nothing to commit"
+        git push origin HEAD:master || echo "push failed"
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
