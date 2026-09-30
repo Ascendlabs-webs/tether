@@ -30,6 +30,14 @@ jobs:
         java-version: "17"
         cache: "gradle"
 
+    # compileSdk/targetSdk is 36, which is not guaranteed pre-installed on the
+    # runner image. Install it (no-op if already present) using the runner's
+    # own SDK tools — no third-party setup action needed (that broke run 7).
+    - name: Ensure Android SDK platform and build-tools 36
+      run: |
+        yes | sdkmanager --licenses > /dev/null
+        sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
     # package-lock.json is lockfileVersion 3 and in sync — npm ci is correct,
     # faster, and reproducible.
     - name: Install npm dependencies
