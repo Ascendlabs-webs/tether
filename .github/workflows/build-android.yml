@@ -5,6 +5,11 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+# Needed to commit the persistent debug keystore back to the repo
+# and to publish the APK to GitHub Releases.
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -12,6 +17,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        # Full history so the keystore commit-back step can push cleanly.
+        fetch-depth: 0
 
     # NOTE: @capacitor/cli@8 requires Node >= 22 (it fatals on Node 20).
     # Vite 8 also accepts >=22.12, so Node 22 satisfies the whole chain.
@@ -65,6 +73,33 @@ jobs:
     - name: Grant Gradle execute permission
       run: chmod +x android/gradlew
 
+    # Gradle auto-creates a throwaway debug keystore when none exists, and CI
+    # runners are ephemeral — so every build was signed with a DIFFERENT key
+    # and Android refused to install it over any previously installed copy
+    # ("App not installed"). Generate one persistent keystore the first time
+    # and commit it, so all builds and updates share a single signature.
+    # The [skip ci] message prevents this push from triggering another run;
+    # the current run continues and builds with the key it just created.
+    - name: Ensure persistent debug keystore
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if [ -f android/app/debug.keystore ]; then
+          echo "debug.keystore already committed, reusing it."
+          exit 0
+        fi
+        keytool -genkeypair -v \
+          -keystore android/app/debug.keystore \
+          -storepass android -keypass android \
+          -alias androiddebugkey \
+          -keyalg RSA -keysize 2048 -validity 10000 \
+          -dname "CN=Android Debug,O=Android,C=US"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add android/app/debug.keystore
+        git commit -m "chore: commit persistent Android debug keystore [skip ci]"
+        git push origin HEAD:${{ github.ref_name }}
+
     - name: Build Debug APK
       working-directory: ./android
       run: ./gradlew assembleDebug --no-daemon --stacktrace
@@ -74,3 +109,16 @@ jobs:
       with:
         name: tether-debug-apk
         path: android/app/build/outputs/apk/debug/app-debug.apk
+
+    # Permanent direct-to-phone download: the Actions artifact is a zip that
+    # expires after 90 days; the release asset is the raw .apk, no expiry.
+    - name: Publish APK to rolling GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release delete apk-build --yes --cleanup-tag || true
+        gh release create apk-build \
+          --title "Tether APK (build ${{ github.run_number }})" \
+          --notes "Latest CI debug build of Tether. If an older copy is installed, uninstall it once (old builds carried throwaway signatures), then install this APK." \
+          --latest \
+          android/app/build/outputs/apk/debug/app-debug.apk
