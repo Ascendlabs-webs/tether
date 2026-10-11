@@ -1,5 +1,5 @@
 {
-  "name": "react-example",
+  "name": "tether",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -39,5 +39,6 @@
     "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "vite-plugin-pwa": "^1.3.0"
-  }
+  },
+  "description": "Private couples connection layer \u2014 ephemeral moments, vault, idea jar, and emotional availability."
 }
