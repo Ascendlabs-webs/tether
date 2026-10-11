@@ -17,6 +17,12 @@ import {
 } from 'lucide-react';
 import { soundEngine } from '../../utils/audioPlayer';
 
+const isRecordedVideo = (url?: string) =>
+  !!url && (url.startsWith('blob:') || url.startsWith('data:video') || /\.(mp4|webm)(\?|$)/i.test(url));
+
+const isRecordedAudio = (url?: string) =>
+  !!url && (url.startsWith('blob:') || url.startsWith('data:audio') || /\.(mp3|m4a|aac|wav|ogg|webm)(\?|$)/i.test(url));
+
 export const MomentsScreen: React.FC = () => {
   const { 
     moments, 
@@ -55,21 +61,52 @@ export const MomentsScreen: React.FC = () => {
       if (stopAudioRef.current) stopAudioRef.current();
       setPlayingAudioId(null);
       setAudioProgress(0);
-    } else {
-      if (stopAudioRef.current) stopAudioRef.current();
-      setPlayingAudioId(moment.id);
-      setAudioProgress(0);
-
-      const duration = moment.durationSeconds || 10;
-      stopAudioRef.current = soundEngine.playVoiceSimulation(
-        duration,
-        (pct) => setAudioProgress(pct),
-        () => {
-          setPlayingAudioId(null);
-          setAudioProgress(0);
-        }
-      );
+      return;
     }
+
+    if (stopAudioRef.current) stopAudioRef.current();
+    setPlayingAudioId(moment.id);
+    setAudioProgress(0);
+
+    if (isRecordedAudio(moment.mediaUrl)) {
+      const audio = new Audio(moment.mediaUrl);
+      const started = Date.now();
+      const durationMs = Math.max(1, (moment.durationSeconds || 10) * 1000);
+      const tick = window.setInterval(() => {
+        setAudioProgress(Math.min(1, (Date.now() - started) / durationMs));
+      }, 200);
+      audio.onended = () => {
+        window.clearInterval(tick);
+        setPlayingAudioId(null);
+        setAudioProgress(0);
+      };
+      stopAudioRef.current = () => {
+        window.clearInterval(tick);
+        audio.pause();
+      };
+      audio.play().catch(() => {
+        window.clearInterval(tick);
+        stopAudioRef.current = soundEngine.playVoiceSimulation(
+          moment.durationSeconds || 10,
+          (pct) => setAudioProgress(pct),
+          () => {
+            setPlayingAudioId(null);
+            setAudioProgress(0);
+          }
+        );
+      });
+      return;
+    }
+
+    const duration = moment.durationSeconds || 10;
+    stopAudioRef.current = soundEngine.playVoiceSimulation(
+      duration,
+      (pct) => setAudioProgress(pct),
+      () => {
+        setPlayingAudioId(null);
+        setAudioProgress(0);
+      }
+    );
   };
 
   return (
@@ -217,22 +254,35 @@ export const MomentsScreen: React.FC = () => {
                       {/* VIDEO */}
                       {moment.mediaType === 'video' && (
                         <div className="relative aspect-4/3 w-full bg-black flex items-center justify-center overflow-hidden">
-                          <img
-                            src={moment.mediaUrl}
-                            alt="Video moment"
-                            className="w-full h-full object-cover"
-                          />
+                          {isRecordedVideo(moment.mediaUrl) ? (
+                            <video
+                              src={moment.mediaUrl}
+                              className="w-full h-full object-cover"
+                              playsInline
+                              controls={activeVideoId === moment.id}
+                              autoPlay={activeVideoId === moment.id}
+                              onEnded={() => setActiveVideoId(null)}
+                            />
+                          ) : (
+                            <img
+                              src={moment.mediaUrl}
+                              alt="Video moment"
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                           <div className="absolute bottom-3 left-3 px-2 py-0.5 rounded-full bg-black/60 text-[10px] text-white font-mono">
                             {moment.durationSeconds || 14}s Video
                           </div>
-                          <button
-                            onClick={() => setActiveVideoId(activeVideoId === moment.id ? null : moment.id)}
-                            className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/10 transition-colors"
-                          >
-                            <div className="w-12 h-12 rounded-full bg-white/90 text-[#2B2320] flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
-                              <Play className="w-5 h-5 ml-0.5 fill-[#2B2320]" />
-                            </div>
-                          </button>
+                          {activeVideoId !== moment.id && (
+                            <button
+                              onClick={() => setActiveVideoId(moment.id)}
+                              className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/10 transition-colors"
+                            >
+                              <div className="w-12 h-12 rounded-full bg-white/90 text-[#2B2320] flex items-center justify-center shadow-lg hover:scale-105 transition-transform">
+                                <Play className="w-5 h-5 ml-0.5 fill-[#2B2320]" />
+                              </div>
+                            </button>
+                          )}
                         </div>
                       )}
 

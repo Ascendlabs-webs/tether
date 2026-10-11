@@ -38,6 +38,18 @@ export const LockScreen: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const latestPhotoUrl =
+    moments.find((m) => m.mediaType === 'photo' || m.mediaType === 'video')?.mediaUrl ||
+    moments[0]?.mediaUrl;
+
+  // Must stay above the early return. A hook after it crashes React when the lock screen opens.
+  useEffect(() => {
+    if (latestPhotoUrl && typeof Image !== 'undefined') {
+      const img = new Image();
+      img.src = latestPhotoUrl;
+    }
+  }, [latestPhotoUrl]);
+
   if (!isLockScreenActive) return null;
 
   const timeString = currentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: false });
@@ -47,14 +59,6 @@ export const LockScreen: React.FC = () => {
   const latestMoment = moments.find(m => m.senderId === partner.id);
   // Latest photo/moment for picture widget
   const latestPhotoMoment = moments.find(m => m.mediaType === 'photo' || m.mediaType === 'video') || moments[0];
-
-  // Eagerly pre-cache latest photo
-  useEffect(() => {
-    if (latestPhotoMoment?.mediaUrl && typeof Image !== 'undefined') {
-      const img = new Image();
-      img.src = latestPhotoMoment.mediaUrl;
-    }
-  }, [latestPhotoMoment?.mediaUrl]);
 
   const vibeOptions: { 
     type: VibeStatusType; 

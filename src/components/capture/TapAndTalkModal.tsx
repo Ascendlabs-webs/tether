@@ -31,6 +31,26 @@ export const TapAndTalkModal: React.FC = () => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const videoChunksRef = useRef<Blob[]>([]);
+
+  const blobToDataUrl = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+  const mediaUrlFromBlob = async (blob: Blob) => {
+    if (blob.size > 0 && blob.size < 700_000) {
+      try {
+        return await blobToDataUrl(blob);
+      } catch {
+        // fall through to a session URL
+      }
+    }
+    return URL.createObjectURL(blob);
+  };
 
   // Reset when opened
   useEffect(() => {
@@ -48,7 +68,53 @@ export const TapAndTalkModal: React.FC = () => {
     }
   }, [isTapAndTalkOpen]);
 
+  // Attach the camera only after the preview element is on screen.
+  useEffect(() => {
+    if (!isTapAndTalkOpen || (mode !== 'photo' && mode !== 'video')) return;
+    let cancelled = false;
+
+    const openCamera = async () => {
+      setCameraError(null);
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setCameraError('Camera stream not supported in this frame. Falling back to quick capture.');
+          return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } },
+          audio: mode === 'video',
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
+        }
+      } catch {
+        if (!cancelled) {
+          setCameraError('Camera access declined. You can take a quick creative photo or upload.');
+        }
+      }
+    };
+
+    openCamera();
+    return () => {
+      cancelled = true;
+    };
+  }, [isTapAndTalkOpen, mode]);
+
   const cleanupStreams = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        // already stopped
+      }
+    }
+    mediaRecorderRef.current = null;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -70,36 +136,8 @@ export const TapAndTalkModal: React.FC = () => {
     }
 
     setSelectedType(type);
-    if (type === 'photo') {
-      startCamera();
-      setMode('photo');
-    } else if (type === 'video') {
-      startCamera();
-      setMode('video');
-    } else if (type === 'audio') {
-      setMode('audio');
-    }
-  };
-
-  const startCamera = async () => {
     setCameraError(null);
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } },
-          audio: selectedType === 'video'
-        });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
-      } else {
-        setCameraError('Camera stream not supported in this frame. Falling back to quick capture.');
-      }
-    } catch {
-      setCameraError('Camera access declined. You can take a quick creative photo or upload.');
-    }
+    setMode(type);
   };
 
   const takePhotoSnapshot = () => {
@@ -133,6 +171,29 @@ export const TapAndTalkModal: React.FC = () => {
   const startVideoRecording = () => {
     setIsRecording(true);
     setRecordingSeconds(0);
+    videoChunksRef.current = [];
+    const stream = streamRef.current;
+    if (stream && typeof MediaRecorder !== 'undefined') {
+      const mime = ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find((type) => {
+        try {
+          return MediaRecorder.isTypeSupported(type);
+        } catch {
+          return false;
+        }
+      });
+      try {
+        const recorder = mime
+          ? new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 280_000 })
+          : new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) videoChunksRef.current.push(event.data);
+        };
+        recorder.start(250);
+      } catch {
+        mediaRecorderRef.current = null;
+      }
+    }
     timerRef.current = setInterval(() => {
       setRecordingSeconds(prev => {
         if (prev >= 15) {
@@ -146,11 +207,43 @@ export const TapAndTalkModal: React.FC = () => {
 
   const stopVideoRecording = () => {
     setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-    cleanupStreams();
-    const fallbackVideo = createAestheticImage('sunset', `15s sunset from ${user.name}`);
-    setPreviewMediaUrl(fallbackVideo);
-    setMode('preview');
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    const recorder = mediaRecorderRef.current;
+    const fallback = () => {
+      cleanupStreams();
+      setPreviewMediaUrl(createAestheticImage('sunset', `15s sunset from ${user.name}`));
+      setMode('preview');
+    };
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.onstop = () => {
+        const blob = new Blob(videoChunksRef.current, { type: recorder.mimeType || 'video/webm' });
+        mediaRecorderRef.current = null;
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+        if (blob.size > 0) {
+          mediaUrlFromBlob(blob).then((url) => {
+            setPreviewMediaUrl(url);
+            setMode('preview');
+          }).catch(fallback);
+        } else {
+          fallback();
+        }
+      };
+      try {
+        try { recorder.requestData(); } catch { /* stop() still flushes the last chunk */ }
+        recorder.stop();
+        return;
+      } catch {
+        fallback();
+        return;
+      }
+    }
+    fallback();
   };
 
   // Audio recording
@@ -190,10 +283,43 @@ export const TapAndTalkModal: React.FC = () => {
 
   const stopAudioRecording = () => {
     setIsRecording(false);
-    if (timerRef.current) clearInterval(timerRef.current);
-    cleanupStreams();
-    setPreviewMediaUrl('recorded_audio_note');
-    setMode('preview');
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    const recorder = mediaRecorderRef.current;
+    const fallback = () => {
+      cleanupStreams();
+      setPreviewMediaUrl('recorded_audio_note');
+      setMode('preview');
+    };
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        mediaRecorderRef.current = null;
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach((track) => track.stop());
+          streamRef.current = null;
+        }
+        if (blob.size > 0) {
+          mediaUrlFromBlob(blob).then((url) => {
+            setPreviewMediaUrl(url);
+            setMode('preview');
+          }).catch(fallback);
+        } else {
+          fallback();
+        }
+      };
+      try {
+        try { recorder.requestData(); } catch { /* stop() still flushes the last chunk */ }
+        recorder.stop();
+        return;
+      } catch {
+        fallback();
+        return;
+      }
+    }
+    fallback();
   };
 
   const handleSend = () => {
@@ -490,7 +616,17 @@ export const TapAndTalkModal: React.FC = () => {
                   </div>
                   <p className="text-sm font-medium text-[#FAF7F5]">Voice snippet ready</p>
                   <p className="text-xs text-[#9E938B] mt-1">{recordingSeconds || 8} seconds recorded</p>
+                  {previewMediaUrl.startsWith('data:audio') || previewMediaUrl.startsWith('blob:') ? (
+                    <audio src={previewMediaUrl} controls className="mt-4 w-full" />
+                  ) : null}
                 </div>
+              ) : selectedType === 'video' && (previewMediaUrl.startsWith('data:video') || previewMediaUrl.startsWith('blob:')) ? (
+                <video
+                  src={previewMediaUrl}
+                  className="w-full h-full object-cover"
+                  playsInline
+                  controls
+                />
               ) : (
                 <img
                   src={previewMediaUrl}

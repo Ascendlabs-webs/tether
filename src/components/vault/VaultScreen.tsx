@@ -185,13 +185,26 @@ export const VaultScreen: React.FC = () => {
             <div className="overflow-y-auto p-4 space-y-4">
               <div className="aspect-4/3 w-full rounded-2xl overflow-hidden bg-black flex items-center justify-center">
                 {selectedVaultMemory.moment.mediaType === 'audio' ? (
-                  <div className="p-8 text-center flex flex-col items-center">
+                  <div className="p-8 text-center flex flex-col items-center w-full">
                     <div className="w-16 h-16 rounded-full bg-[#C86D51] text-white flex items-center justify-center mb-3">
                       <Play className="w-7 h-7 ml-0.5 fill-white" />
                     </div>
                     <p className="text-sm font-medium text-white">Voice Note</p>
                     <p className="text-xs text-[#A89F97] mt-1">{selectedVaultMemory.moment.durationSeconds || 11} seconds</p>
+                    {(selectedVaultMemory.moment.mediaUrl.startsWith('data:audio') ||
+                      selectedVaultMemory.moment.mediaUrl.startsWith('blob:')) && (
+                      <audio src={selectedVaultMemory.moment.mediaUrl} controls className="mt-4 w-full" />
+                    )}
                   </div>
+                ) : selectedVaultMemory.moment.mediaType === 'video' &&
+                  (selectedVaultMemory.moment.mediaUrl.startsWith('data:video') ||
+                    selectedVaultMemory.moment.mediaUrl.startsWith('blob:')) ? (
+                  <video
+                    src={selectedVaultMemory.moment.mediaUrl}
+                    className="w-full h-full object-cover"
+                    playsInline
+                    controls
+                  />
                 ) : (
                   <img
                     src={selectedVaultMemory.moment.mediaUrl}

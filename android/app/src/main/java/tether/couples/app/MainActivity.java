@@ -15,7 +15,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         createMomentsChannel();
-        requestNotificationPermission();
+        requestAppPermissions();
     }
 
     private void createMomentsChannel() {
@@ -30,14 +30,20 @@ public class MainActivity extends BridgeActivity {
         if (manager != null) manager.createNotificationChannel(channel);
     }
 
-    private void requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return;
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            return;
+    private void requestAppPermissions() {
+        java.util.ArrayList<String> needed = new java.util.ArrayList<>();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+            && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.POST_NOTIFICATIONS);
         }
-        requestPermissions(
-            new String[] { Manifest.permission.POST_NOTIFICATIONS },
-            NOTIFICATION_PERMISSION_REQUEST
-        );
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.CAMERA);
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            needed.add(Manifest.permission.RECORD_AUDIO);
+        }
+        if (!needed.isEmpty()) {
+            requestPermissions(needed.toArray(new String[0]), NOTIFICATION_PERMISSION_REQUEST);
+        }
     }
 }
