@@ -59,7 +59,7 @@ The CI workflow (`.github/workflows/build-android.yml`) builds a debug APK and p
 
 ## Demo Data
 
-On first load the app seeds demo users (Sanjay & Alex), moments, vault items, and ideas.  
+On first load the app seeds demo users (Sanjay & Alexandria), moments, vault items, and ideas.  
 You can switch partner perspective from the header.
 
 ## License

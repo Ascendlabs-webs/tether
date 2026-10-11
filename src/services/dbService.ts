@@ -10,10 +10,6 @@ import {
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { User, Moment, VaultMemory, IdeaItem, Couple } from '../types/tether';
 
-/**
- * Removes any undefined properties or nested undefined values from an object,
- * as Firestore strictly disallows undefined in document payloads.
- */
 function cleanUndefined<T>(obj: T): T {
   if (obj === null || obj === undefined) {
     return null as any;
@@ -31,6 +27,12 @@ function cleanUndefined<T>(obj: T): T {
     return cleaned as any;
   }
   return obj;
+}
+
+/** Demo partner kept the same id. Only the shown name changed. */
+function shownName(userId: string | undefined, name: string | undefined) {
+  if (userId === 'user_alex' && (!name || name === 'Alex')) return 'Alexandria';
+  return name || 'Partner';
 }
 
 export class DbService {
@@ -66,7 +68,7 @@ export class DbService {
           const d = docSnap.data();
           users[d.id] = {
             id: d.id,
-            name: d.name || 'Partner',
+            name: shownName(d.id, d.name),
             avatar: d.avatar || '',
             email: d.email || '',
             isPremium: Boolean(d.isPremium),
@@ -76,6 +78,9 @@ export class DbService {
             isInFocusMode: Boolean(d.isInFocusMode),
             focusModeReason: d.focusModeReason || undefined,
           };
+          if (d.id === 'user_alex' && d.name === 'Alex') {
+            setDoc(doc(db, 'users', d.id), { name: 'Alexandria' }, { merge: true }).catch(() => {});
+          }
         });
         if (Object.keys(users).length > 0) {
           onUpdate(users);
@@ -145,7 +150,7 @@ export class DbService {
             id: d.id,
             coupleId: d.coupleId,
             senderId: d.senderId,
-            senderName: d.senderName,
+            senderName: shownName(d.senderId, d.senderName),
             senderAvatar: d.senderAvatar,
             mediaType: d.mediaType,
             mediaUrl: d.mediaUrl,
@@ -228,7 +233,9 @@ export class DbService {
             id: d.id,
             coupleId: d.coupleId,
             momentId: d.momentId,
-            moment: d.moment,
+            moment: d.moment
+              ? { ...d.moment, senderName: shownName(d.moment.senderId, d.moment.senderName) }
+              : d.moment,
             savedAt: d.savedAt,
             savedBy: d.savedBy,
             note: d.note || undefined,
@@ -291,7 +298,7 @@ export class DbService {
             note: d.note || undefined,
             category: d.category,
             createdBy: d.createdBy,
-            createdByName: d.createdByName,
+            createdByName: shownName(d.createdBy, d.createdByName),
             createdAt: d.createdAt,
             isCompleted: Boolean(d.isCompleted),
           });

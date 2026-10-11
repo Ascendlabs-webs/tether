@@ -302,7 +302,7 @@ export const OnboardingFlow: React.FC = () => {
                 onClick={handleCompletePairing}
                 className="w-full h-12 rounded-xl bg-[#C86D51] hover:bg-[#B75F44] text-white text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-transform"
               >
-                <span>Enter Tether (Connected with Alex)</span>
+                <span>Enter Tether (Connected with Alexandria)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
