@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTether } from '../../context/TetherContext';
 import { Settings, ShieldCheck, Moon, RefreshCw, Lock } from 'lucide-react';
-import { PWAInstallButton } from './PWAInstallButton';
 
 export const Header: React.FC = () => {
   const { 
@@ -129,9 +128,6 @@ export const Header: React.FC = () => {
           >
             <Lock className="w-4 h-4" />
           </button>
-
-          {/* PWA / APK Install Button */}
-          <PWAInstallButton />
 
           {/* Settings Trigger */}
           <button

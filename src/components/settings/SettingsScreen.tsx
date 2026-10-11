@@ -15,12 +15,9 @@ import {
   ChevronRight,
   HelpCircle,
   LogOut,
-  Moon,
-  Download,
-  Smartphone
+  Moon
 } from 'lucide-react';
 import { PremiumScreen } from '../premium/PremiumScreen';
-import { PWAInstallModal } from '../common/PWAInstallModal';
 
 export const SettingsScreen: React.FC = () => {
   const { 
@@ -41,7 +38,6 @@ export const SettingsScreen: React.FC = () => {
   } = useTether();
 
   const [copiedCode, setCopiedCode] = useState(false);
-  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [profileName, setProfileName] = useState(user.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [dndReason, setDndReason] = useState(user.focusModeReason || 'Deep Work');
@@ -520,26 +516,6 @@ export const SettingsScreen: React.FC = () => {
             </div>
             <ChevronRight className="w-4 h-4 text-[#A89F97]" />
           </button>
-
-          {/* Download APK / Install App on Phone */}
-          <button
-            onClick={() => setIsInstallModalOpen(true)}
-            className="w-full p-4 flex items-center justify-between hover:bg-[#FAF7F5] transition-colors text-left bg-gradient-to-r from-[#FAF6F3] to-white"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-[#C86D51]/15 flex items-center justify-center text-[#C86D51]">
-                <Download className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-semibold text-[#2B2320]">Install App / Download APK</p>
-                  <span className="text-[9px] bg-[#C86D51] text-white px-1.5 py-0.5 rounded-full font-medium">Android</span>
-                </div>
-                <p className="text-[10px] text-[#736A64]">Direct WebAPK installation, QR code & CLI</p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-[#A89F97]" />
-          </button>
         </div>
 
         {/* Demo Switcher & Re-onboarding */}
@@ -590,11 +566,6 @@ export const SettingsScreen: React.FC = () => {
           </p>
         </div>
       </div>
-
-      <PWAInstallModal
-        isOpen={isInstallModalOpen}
-        onClose={() => setIsInstallModalOpen(false)}
-      />
     </div>
   );
 };
